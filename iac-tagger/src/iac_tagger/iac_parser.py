@@ -4,6 +4,8 @@ from typing import Dict, Optional, Any
 import subprocess
 import hashlib
 import hcl2
+import re
+import json
 
 class IaCParser(ABC):
     """Base abstract class for IaC parsers"""
@@ -30,9 +32,28 @@ class IaCParser(ABC):
         except subprocess.CalledProcessError:
             return "no_git_history"
     
-    def generate_resource_hash(self, content: str) -> str:
-        """Generate a hash of the resource content"""
-        return hashlib.sha256(content.encode()).hexdigest()[:8] 
+    def generate_resource_hash(self, resource_content):
+        # First convert to JSON with consistent formatting
+        json_content = json.dumps(resource_content, sort_keys=True, separators=(',', ':'))
+        
+        # Remove any existing git-commit tags
+        cleaned_content = re.sub(
+            r'["\']?[\w-]+["\']?\s*[:=]\s*["\'][^"\']*:[a-f0-9]+:[a-f0-9]+["\']',
+            '',
+            json_content
+        )
+        
+        # Remove empty tag containers
+        cleaned_content = re.sub(r'["\'](tags|labels)["\']\s*:\s*{\s*}', '', cleaned_content)  # Empty objects
+        cleaned_content = re.sub(r'["\'](tags|labels)["\']\s*:\s*\[\s*\]', '', cleaned_content)  # Empty arrays
+        
+        # Clean up any artifacts left by the removal
+        cleaned_content = re.sub(r',\s*}', '}', cleaned_content)  # Remove trailing commas
+        cleaned_content = re.sub(r'\s+', '', cleaned_content)     # Remove all whitespace
+        cleaned_content = re.sub(r',+', ',', cleaned_content)     # Remove duplicate commas
+        
+        # Calculate hash of the normalized content
+        return hashlib.sha256(cleaned_content.encode()).hexdigest()
 
 class TerraformParser(IaCParser):
     TAG_KEY = "git_commit"

@@ -30,7 +30,6 @@ class TerraformParser(IaCParser):
         current_hash = self.generate_resource_hash(str(resource))
         commit_hash = self.get_last_commit(file_path)
         
-        print(f"debug resource:\n {resource}")
         # Check if tag already exists and is current
         if "tags" in resource:
             existing_tag = resource["tags"].get(self.TAG_KEY)
