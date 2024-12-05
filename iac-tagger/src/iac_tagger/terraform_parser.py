@@ -5,7 +5,7 @@ from .iac_parser import IaCParser
 import re
 
 class TerraformParser(IaCParser):
-    TAG_KEY = "git_commit"
+    TAG_KEY = "iac_tagger"
     
     def get_resources(self, file_path: Path) -> Dict[str, dict]:
         with open(file_path, 'r') as f:
