@@ -32,39 +32,69 @@ class IaCParser(ABC):
         except subprocess.CalledProcessError:
             return "no_git_history"
     
-    def generate_resource_hash(self, resource_content):
+    def generate_resource_hash(self,resource_content, iac_tagger_prefix="iac_tagger"):
+        """
+        Generate a consistent hash for Kubernetes/Terraform resources by ignoring specified tags/labels.
+        
+        Args:
+            resource_content (str or dict): Resource content in HCL/K8s manifest (as a string) or a parsed dictionary.
+            iac_tagger_prefix (str): The configurable prefix to identify and remove the tagger (default: "iac_tagger").
+        
+        Returns:
+            str: A SHA256 hash of the cleaned resource content.
+        """
+        def clean_tags_and_labels(content, prefix):
+            # Regex to match labels/tags with the specified prefix
+            tagger_pattern = rf'["\']{prefix}["\']\s*:\s*["\'][^"\']+["\'],?'
+            
+            # Remove matching labels or tags
+            content = re.sub(tagger_pattern, '', content)
+            
+            # Remove empty tag/label containers
+            content = re.sub(r'["\'](tags|labels)["\']\s*:\s*{\s*}', '', content)
+            content = re.sub(r'["\'](tags|labels)["\']\s*:\s*\[\s*\]', '', content)
+            
+            # Clean up artifacts (e.g., trailing commas or redundant spaces)
+            content = re.sub(r',\s*}', '}', content)
+            content = re.sub(r'\s+', '', content)
+            content = re.sub(r',+', ',', content)
+            
+            return content
+
         if isinstance(resource_content, str):
-            # For HCL content, first remove any merge expressions and their content
+            # Handle HCL or Kubernetes manifest as string
+            # Remove "merge()" calls for Terraform
             cleaned_content = re.sub(
-                r'tags\s*=\s*merge\([^)]+\)',
-                'tags = {}',
+                r'tags\s*=\s*merge\([^)]+\)', 
+                'tags = {}', 
                 resource_content
             )
             
-            # Remove any other existing tags
+            # Remove standard tags in HCL (e.g., `tags = {}`)
             cleaned_content = re.sub(
-                r'tags\s*=\s*{[^}]+}',
-                'tags = {}',
+                r'tags\s*=\s*{[^}]+}', 
+                'tags = {}', 
                 cleaned_content
             )
             
-            # Remove all whitespace and normalize
-            cleaned_content = re.sub(r'\s+', '', cleaned_content)
+            # Apply the cleaning logic for tags/labels
+            cleaned_content = clean_tags_and_labels(cleaned_content, iac_tagger_prefix)
+            
+            # Generate hash
             return hashlib.sha256(cleaned_content.encode()).hexdigest()
         
-        # For already parsed dictionary content
-        json_content = json.dumps(resource_content, sort_keys=True, separators=(',', ':'))
+        elif isinstance(resource_content, dict):
+            # Handle already parsed dictionary content (e.g., for Kubernetes manifests)
+            json_content = json.dumps(resource_content, sort_keys=True, separators=(',', ':'))
+            
+            # Apply the cleaning logic for tags/labels
+            cleaned_content = clean_tags_and_labels(json_content, iac_tagger_prefix)
+            
+            # Generate hash
+            return hashlib.sha256(cleaned_content.encode()).hexdigest()
         
-        # Remove empty tag containers
-        cleaned_content = re.sub(r'["\'](tags|labels)["\']\s*:\s*{\s*}', '', json_content)
-        cleaned_content = re.sub(r'["\'](tags|labels)["\']\s*:\s*\[\s*\]', '', cleaned_content)
-        
-        # Clean up artifacts
-        cleaned_content = re.sub(r',\s*}', '}', cleaned_content)
-        cleaned_content = re.sub(r'\s+', '', cleaned_content)
-        cleaned_content = re.sub(r',+', ',', cleaned_content)
-        
-        return hashlib.sha256(cleaned_content.encode()).hexdigest()
+        else:
+            raise TypeError("Resource content must be either a string or a dictionary.")
 
 class TerraformParser(IaCParser):
     TAG_KEY = "iac_tagger"

@@ -5,7 +5,7 @@ from iac_tagger.iac_parser import IaCParser
 from abc import ABC, abstractmethod
 
 class KubernetesParser(IaCParser):
-    LABEL_KEY = "git-commit"
+    LABEL_KEY = "iac_tagger"
     
     def get_resources(self, file_path: Path) -> Dict[str, dict]:
         with open(file_path, 'r') as f:
