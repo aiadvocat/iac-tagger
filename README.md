@@ -10,20 +10,20 @@ IAC Tagger helps track the relationship between infrastructure resources and the
 
 ## Installation
 
-```
+```bash
 pip install iac-tagger
 ```
 
 ## Usage
 
-```
+```bash
 # Tag all IaC resources in the current directory
 iac-tagger .
 
 # Tag resources in a specific directory
 iac-tagger path/to/iac/files
 
-# Specify custom tag key (default is 'GitCommit')
+# Specify custom tag key (default is 'iac_tagger')
 iac-tagger . --tag-key CustomGitTag
 ```
 
@@ -38,42 +38,43 @@ The tool:
 ## Supported Resources
 
 ### Terraform
-- AWS resources
+- AWS resources (including S3, IAM, Neptune, Elasticsearch)
 - Azure resources
 - GCP resources
 
 Example of a tagged Terraform resource:
-```
+```hcl
 resource "aws_instance" "web" {
   ami           = "ami-0c55b159cbfafe1f0"
   instance_type = "t2.micro"
 
   tags = {
     Name      = "web-server"
-    git-commit = "aws_instance.web:a1b2c3:d4e5f6"
+    iac_tagger = "aws_instance.web:a1b2c3:d4e5f6"
   }
 }
 ```
 
 ### Kubernetes
 - All resource types that support labels/annotations
+- Supports ConfigMaps and Deployments
 
 Example of a tagged Kubernetes resource:
-```
+```yaml
 apiVersion: v1
 kind: Pod
 metadata:
   name: nginx
   labels:
     app: nginx
-    git-commit: "pod/nginx:a1b2c3:d4e5f6"
+    iac_tagger: "pod/nginx:a1b2c3:d4e5f6"
 ```
 
 ## Requirements
 
 - Python 3.7+
 - Git repository
-- Required Python packages:
+- Required Python packages (installed automatically):
   - setuptools
   - pyyaml
   - hcl2
@@ -81,20 +82,35 @@ metadata:
 ## Development Setup
 
 1. Clone the repository:
-```
+```bash
 git clone https://github.com/yourusername/iac-tagger.git
 cd iac-tagger
 ```
 
 2. Create a virtual environment:
-```
+```bash
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 3. Install development dependencies:
-```
+```bash
 pip install -e ".[dev]"
+```
+
+## Project Structure
+
+```
+iac-tagger/
+├── src/
+│   └── iac_tagger/
+│       ├── __init__.py
+│       ├── main.py
+│       ├── iac_parser.py
+│       ├── kubernetes_parser.py
+│       └── terraform_parser.py
+├── requirements.txt
+└── setup.py
 ```
 
 ## Troubleshooting
