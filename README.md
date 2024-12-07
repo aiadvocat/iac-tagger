@@ -17,11 +17,15 @@ pip install iac-tagger
 ## Usage
 
 ```bash
+
+# Tag a specific file in the current directory
+iac-tagger -f filename.tf
+
 # Tag all IaC resources in the current directory
-iac-tagger .
+iac-tagger -d .
 
 # Tag resources in a specific directory
-iac-tagger path/to/iac/files
+iac-tagger -d path/to/iac/files
 
 # Specify custom tag key (default is 'iac_tagger')
 iac-tagger . --tag-key CustomGitTag
