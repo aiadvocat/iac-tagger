@@ -46,6 +46,7 @@ coverage.xml
 *.tf
 *.yaml
 *.yml
+test_iac/
 
 # Jupyter Notebook
 .ipynb_checkpoints

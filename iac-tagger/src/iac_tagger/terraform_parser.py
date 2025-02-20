@@ -137,7 +137,7 @@ class TerraformParser(IaCParser):
         new_tag = f'{resource_id}:{current_hash}:{commit_hash}'
         
         # Find the resource block and add/update the tag
-        resource_pattern = fr'resource\s+"{resource_id.split(".")[0]}"\s+"{resource_id.split(".")[1]}"'
+        resource_pattern = fr'resource\s+(?:"|){resource_id.split(".")[0]}(?:"|)\s+"{resource_id.split(".")[1]}"'
         resource_match = re.search(resource_pattern, content)
         
         if resource_match:

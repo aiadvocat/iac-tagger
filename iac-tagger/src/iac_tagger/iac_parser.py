@@ -28,7 +28,8 @@ class IaCParser(ABC):
                 capture_output=True,
                 text=True
             )
-            return result.stdout.strip()
+            # reduce hash size on commit hash
+            return result.stdout.strip()[:8]
         except subprocess.CalledProcessError:
             return "no_git_history"
     
@@ -79,9 +80,10 @@ class IaCParser(ABC):
             
             # Apply the cleaning logic for tags/labels
             cleaned_content = clean_tags_and_labels(cleaned_content, iac_tagger_prefix)
-            
             # Generate hash
-            return hashlib.sha256(cleaned_content.encode()).hexdigest()
+            full_hash = hashlib.sha256(cleaned_content.encode()).hexdigest()
+            # reduce hash size
+            return full_hash[:8]
         
         elif isinstance(resource_content, dict):
             # Handle already parsed dictionary content (e.g., for Kubernetes manifests)
@@ -91,7 +93,9 @@ class IaCParser(ABC):
             cleaned_content = clean_tags_and_labels(json_content, iac_tagger_prefix)
             
             # Generate hash
-            return hashlib.sha256(cleaned_content.encode()).hexdigest()
+            full_hash = hashlib.sha256(cleaned_content.encode()).hexdigest()
+            # reduce hash size
+            return full_hash[:8]
         
         else:
             raise TypeError("Resource content must be either a string or a dictionary.")
